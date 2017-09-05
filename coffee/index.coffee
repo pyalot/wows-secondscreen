@@ -7,8 +7,4 @@ $ ->
 
 	connection.onmessage = ({data}) ->
 		data = JSON.parse(data)
-		switch data.type
-			when 'info'
-				game.info(data.data)
-			when 'update'
-				game.update(data.data)
+		game.message(data)

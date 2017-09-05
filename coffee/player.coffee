@@ -135,32 +135,34 @@ exports.index = class Player
 				color = '#45e9af'
 			else
 				if @data.spotted
-					color = 'red'
+					color = '2a3140'
 				else
 					color = '#ccc'
 		else
-			color = 'black'
+			color = 'rgba(0,0,0,0.5)'
 
 		@ctx.strokeStyle = 'rgba(255,255,255,0.2)'
-		@ctx.beginPath()
-		@ctx.moveTo(x, y)
-		@ctx.lineTo(x+s*30, y-c*30)
-		@ctx.stroke()
-
 		@ctx.fillStyle = color
+
+		if @data.alive
+			@ctx.save()
+			@ctx.globalAlpha = 0.5
+			@ctx.textAlign = 'center'
+			@ctx.font = '500 9px "Nobile"'
+			@ctx.fillText(@info.ship.short, Math.round(x), Math.round(y+18))
+			@ctx.restore()
+
+			@ctx.beginPath()
+			@ctx.moveTo(x, y)
+			@ctx.lineTo(x+s*30, y-c*30)
+			@ctx.stroke()
+		
 		shape = shapes[@info.ship.type]
 		@ctx.save()
 		@ctx.translate(x, y)
 		@ctx.rotate(@data.dir - Math.PI/2)
 		#@ctx.scale(10, 10)
 		@ctx.fill(shape)
-		@ctx.restore()
-
-		@ctx.save()
-		@ctx.globalAlpha = 0.5
-		@ctx.textAlign = 'center'
-		@ctx.font = '500 9px "Nobile"'
-		@ctx.fillText(@info.ship.short, Math.round(x), Math.round(y+18))
 		@ctx.restore()
 
 	died: ->

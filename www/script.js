@@ -140,20 +140,17 @@ $(function() {
     var data;
     data = arg.data;
     data = JSON.parse(data);
-    switch (data.type) {
-      case 'info':
-        return game.info(data.data);
-      case 'update':
-        return game.update(data.data);
-    }
+    return game.message(data);
   };
 });
 });
 moduleManager.module('/game', function(exports,sys){
-var Game, Player,
+var Entities, Game, Player,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 Player = sys["import"]('player');
+
+Entities = sys["import"]('entities');
 
 exports.index = Game = (function() {
   function Game() {
@@ -172,6 +169,7 @@ exports.index = Game = (function() {
     this.playersByID = {};
     this.playersByShipID = {};
     this.players = [];
+    this.entities = new Entities(this);
     this.raf();
   }
 
@@ -211,7 +209,18 @@ exports.index = Game = (function() {
     }
   };
 
-  Game.prototype.update = function(data) {
+  Game.prototype.message = function(data) {
+    switch (data.type) {
+      case 'info':
+        return this.info(data.data);
+      case 'update':
+        return this.updatePlayers(data.data);
+      case 'entity':
+        return this.entities.message(data);
+    }
+  };
+
+  Game.prototype.updatePlayers = function(data) {
     var i, item, len, player;
     for (i = 0, len = data.length; i < len; i++) {
       item = data[i];
@@ -274,6 +283,7 @@ exports.index = Game = (function() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     if (this.inMatch) {
       this.drawBorder();
+      this.entities.draw();
       this.drawPlayers();
     }
     return requestAnimationFrame(this.raf);
@@ -427,31 +437,33 @@ exports.index = Player = (function() {
         color = '#45e9af';
       } else {
         if (this.data.spotted) {
-          color = 'red';
+          color = '2a3140';
         } else {
           color = '#ccc';
         }
       }
     } else {
-      color = 'black';
+      color = 'rgba(0,0,0,0.5)';
     }
     this.ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    this.ctx.beginPath();
-    this.ctx.moveTo(x, y);
-    this.ctx.lineTo(x + s * 30, y - c * 30);
-    this.ctx.stroke();
     this.ctx.fillStyle = color;
+    if (this.data.alive) {
+      this.ctx.save();
+      this.ctx.globalAlpha = 0.5;
+      this.ctx.textAlign = 'center';
+      this.ctx.font = '500 9px "Nobile"';
+      this.ctx.fillText(this.info.ship.short, Math.round(x), Math.round(y + 18));
+      this.ctx.restore();
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, y);
+      this.ctx.lineTo(x + s * 30, y - c * 30);
+      this.ctx.stroke();
+    }
     shape = shapes[this.info.ship.type];
     this.ctx.save();
     this.ctx.translate(x, y);
     this.ctx.rotate(this.data.dir - Math.PI / 2);
     this.ctx.fill(shape);
-    this.ctx.restore();
-    this.ctx.save();
-    this.ctx.globalAlpha = 0.5;
-    this.ctx.textAlign = 'center';
-    this.ctx.font = '500 9px "Nobile"';
-    this.ctx.fillText(this.info.ship.short, Math.round(x), Math.round(y + 18));
     return this.ctx.restore();
   };
 
@@ -483,7 +495,85 @@ exports.index = Player = (function() {
 
 })();
 });
+moduleManager.module('/entities', function(exports,sys){
+var Entities, SmokeScreen, entityTypes;
+
+entityTypes = {
+  smoke: SmokeScreen = (function() {
+    function SmokeScreen(game, data) {
+      var b, f, g, r, ref;
+      this.game = game;
+      this.ctx = this.game.ctx;
+      this.radius = data.radius;
+      ref = [5, 32, 53], r = ref[0], g = ref[1], b = ref[2];
+      f = 0.2;
+      r = Math.round(r * (1 - f) + 255 * f).toFixed(0);
+      g = Math.round(g * (1 - f) + 255 * f).toFixed(0);
+      b = Math.round(b * (1 - f) + 255 * f).toFixed(0);
+      this.color = "rgb(" + r + ", " + g + ", " + b + ")";
+    }
+
+    SmokeScreen.prototype.draw = function() {
+      var i, len, ref, ref1, x, y;
+      if (this.points != null) {
+        this.ctx.save();
+        this.ctx.fillStyle = this.color;
+        ref = this.points;
+        for (i = 0, len = ref.length; i < len; i++) {
+          ref1 = ref[i], x = ref1[0], y = ref1[1];
+          x = this.game.getDrawX(x);
+          y = this.game.getDrawY(y);
+          this.ctx.beginPath();
+          this.ctx.arc(x, y, this.radius, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+        return this.ctx.restore();
+      }
+    };
+
+    SmokeScreen.prototype.update = function(arg) {
+      this.points = arg.points;
+      return null;
+    };
+
+    return SmokeScreen;
+
+  })()
+};
+
+exports.index = Entities = (function() {
+  function Entities(game) {
+    this.game = game;
+    this.entities = {};
+  }
+
+  Entities.prototype.message = function(data) {
+    switch (data.action) {
+      case 'create':
+        return this.entities[data.id] = new entityTypes[data.entityType](this.game, data);
+      case 'update':
+        return this.entities[data.id].update(data);
+      case 'remove':
+        return delete this.entities[data.id];
+    }
+  };
+
+  Entities.prototype.draw = function() {
+    var entity, id, ref, results;
+    ref = this.entities;
+    results = [];
+    for (id in ref) {
+      entity = ref[id];
+      results.push(entity.draw());
+    }
+    return results;
+  };
+
+  return Entities;
+
+})();
+});
 moduleManager.index();
 })();
 
-//# sourceMappingURL=./www/script.js.json
+//# sourceMappingURL=./script.js.json

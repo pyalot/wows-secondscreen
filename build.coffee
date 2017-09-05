@@ -229,7 +229,7 @@ compilePackage = ({root, target, libs}) ->
 
         fs.writeFileSync(
             path.join(__dir, "#{target}"),
-            result.code + "\n//# sourceMappingURL=./#{target}.json",
+            result.code + "\n//# sourceMappingURL=./script.js.json", #fixme
         )
         fs.writeFileSync(
             path.join(__dir, "#{target}.json"),

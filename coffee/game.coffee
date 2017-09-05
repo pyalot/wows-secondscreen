@@ -1,4 +1,5 @@
 Player = sys.import 'player'
+Entities = sys.import 'entities'
 
 exports.index = class Game
 	constructor: ->
@@ -25,6 +26,8 @@ exports.index = class Game
 		@playersByID = {}
 		@playersByShipID = {}
 		@players = []
+
+		@entities = new Entities(@)
 
 		@raf()
 
@@ -60,7 +63,16 @@ exports.index = class Game
 			@enemiesAlive.empty()
 		return
 
-	update: (data) ->
+	message: (data) ->
+		switch data.type
+			when 'info'
+				@info(data.data)
+			when 'update'
+				@updatePlayers(data.data)
+			when 'entity'
+				@entities.message(data)
+
+	updatePlayers: (data) ->
 		for item in data
 			player = @playersByID[item.id]
 			if player?
@@ -115,6 +127,7 @@ exports.index = class Game
 
 		if @inMatch
 			@drawBorder()
+			@entities.draw()
 			@drawPlayers()
 
 		requestAnimationFrame(@raf)

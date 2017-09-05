@@ -1,73 +1,6 @@
-'''
-BWPersonality.PlayersInfo.__playerInfos -> dict of players
-
-player
-    'accountDBID',
-    'avatarId',
-    'clanTag', 
-    'crewParams', 
-    'fragsCount', 
-    'hTTKStatus', 
-    'id', 
-    'invitationsEnabled', 
-    'isAbuser', -> pink? 
-    'isAlive', 
-    'isBot', 
-    'isClientLoaded', 
-    'isConnected', 
-    'isHidden', 
-    'isInvisible', 
-    'isLeaver', 
-    'isOwn', 
-    'isPreBattleOwner', 
-    'killedBuildingsCount', 
-    'maxHealth', 
-    'name', 
-    'onTeammateMadeTeamDamage', 
-    'preBattleIdOnStart', 
-    'preBattleSign', 
-    'prebattleId', 
-    'prebattleIndex', 
-    'rankInfoDump', 
-    'setShipVisible', 
-    'shipComponents', 
-    'shipConfig', 
-    'shipGameData', 
-    'shipId', 
-    'shipInfo', 
-    'shipParamsId', 
-    'teamId', 
-    'teammateDamages', 
-    'ttkStatus', 
-    'vehicleParams'
-
-player.shipGameData ->
-    'buoyancy', ??? 
-    'health', 
-    'height', ???
-    'isMiniMapVisible', 
-    'isShipVisible', 
-    'isVisible', 
-    'maxHealth', ???
-    'position' -> x(-west,+east),y,z(+north,-south)
-    'regenerationHealth', ???
-    'speed' -> speed in unknown unit, 57.5004995257 -> 22 knots, 13.9994999767 -> 5.4 knots, conversion factor = *0.38260537180493609354842460796024 to knots
-    'speedServerLerper' ???
-    'velocity', vec2 of velocity
-    'yaw' -> in radians with 0 north
-
-    112.000499524 speed
-
-    0.0295104980469, 3.86241149902 velocity -> 
-
-    |velocity| * 11.158506041729634 -> knots
-
-    43.1 kts (formally 43)
-
-
-'''
-
 import BWPersonality, Junk, BigWorld, json, time, math
+
+Entities = mapi.require('entities').Entities
 
 def getPlayers():
     return BWPersonality.PlayersInfo.__playerInfos
@@ -155,6 +88,7 @@ class Game:
         self.server = server
         self.inMatch = False
         self.players = []
+        self.entities = Entities(server)
 
     def send(self, **data):
         self.server.send_message_to_all(json.dumps(data))
@@ -175,6 +109,7 @@ class Game:
         self.send(type='info', data=self.info())
 
     def update(self):
+        self.entities.update()
         players = getPlayers()
         if len(players) > 0 and not self.inMatch:
             self.startMatch()
@@ -208,5 +143,6 @@ class Game:
     def informClient(self, client):
         try:
             self.server.send_message(client, json.dumps({'type':'info', 'data':self.info()}))
+            self.entities.informClient(client)
         except:
             mapi.log_exc()
