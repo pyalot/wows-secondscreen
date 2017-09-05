@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css?family=Nobile:400,500,700');
+@import url('https://fonts.googleapis.com/css?family=Inconsolata');
+
+*{
+	box-sizing: border-box;
+	position: relative;
+	margin: 0;
+	padding: 0;
+	font-family: "Inconsolata";
+	font-size: 12px;
+}
+
+body,html{
+	color: #ddd;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	margin: 0;
+	padding: 0;
+}
+
+body{
+	display: flex;
+	flex-direction: row-reverse;
+}
+
+div.sidebar{
+	background-color: #272822;
+	flex-basis: 300px;
+	flex-shrink: 0;
+	flex-grow: 0;
+
+	> h1{
+		font-size: 16px;
+		
+		padding: 2px 2px 2px 2px;
+		text-align: center;
+
+		&.allies{
+			background-color: rgba(30,230,0,0.5);
+		}
+		&.enemies{
+			background-color: rgba(230,10,0,0.5);
+		}
+	}
+
+	> div{
+		div.player{
+			display: flex;
+			flex-direction: row;
+			border-bottom: 1px solid rgba(255,255,255,0.3);
+
+			&.dead{
+				color: #444;
+			}
+
+			&.targeted{
+				background-color: #666;
+			}
+
+			> div{
+				padding: 4px 6px 4px 6px;
+
+				&.hidden{
+					opacity: 0;
+				}
+			}
+
+			div.name{
+				flex-grow: 1;
+			}
+
+			div.ship{
+				flex-basis: 100px;
+				flex-shrink: 0;
+				flex-grow: 0;
+			}
+
+			div.speed{
+				flex-basis: 50px;
+				flex-shrink: 0;
+				flex-grow: 0;
+			}
+		}
+	}
+}
+
+div.map{
+	background-color: #052035;
+	flex-grow: 1;
+
+	> canvas{
+		width: 100%;
+		height: 100%;
+		position: absolute;
+		top: 0px;
+		left: 0px;
+	}
+}
