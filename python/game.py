@@ -1,5 +1,19 @@
 import BWPersonality, Junk, BigWorld, json, time, math
 
+'''
+BattleLogic Entity
+'battleLogicName': 'Domination', 
+    '_BattleLogic__components': {
+        'controlPoints': <m49a3e87b.m339fa3d6.ControlPointsComponent object at 0x377B2E50>, 
+        'missions': <m49a3e87b.ma782425f.MissionsComponent object at 0x3E2962F0>, 
+        'time': <m49a3e87b.m72e2a207.BattleTimeComponent object at 0x3E296850>
+    },
+    >>> bl._BattleLogic__components['controlPoints'][0].position
+    (-150, 0, -75)
+    >>> bl._BattleLogic__components['controlPoints'][0].radius
+    100.0
+'''
+
 Entities = mapi.require('entities').Entities
 
 def getPlayers():
@@ -119,11 +133,21 @@ class Game:
         if self.inMatch:
             self.send(type='update', data=self.matchState())
 
+    def getMapName(self):
+        mapIndex = BWPersonality.g_replayCtrl._BattleReplay__mapIdx
+        rds = __import__(BWPersonality.g_replayCtrl.__module__).RDS
+        return rds.mapsList[mapIndex]
+
+        # does not work because at the time of load chunks aren't loaded
+        #chunkname = BigWorld.findChunkFromPoint((0,0,0), BigWorld.player().spaceID)
+        #return chunkname.split('@')[1]
+
     def mapInfo(self):
         if self.inMatch:
             spaceID = BigWorld.player().spaceID
             high, low = Junk.getMapBorder(spaceID)
             return {
+                'name': self.getMapName(),
                 'border': {
                     'high': tuple(high),
                     'low': tuple(low),
@@ -138,7 +162,14 @@ class Game:
         }
 
     def matchState(self):
-        return [player.state() for player in self.players]
+        camera = BigWorld.camera()
+        return {
+            'camera' : {
+                'dir': tuple(camera.direction),
+                'fov': camera.fov,
+            },
+            'players': [player.state() for player in self.players]
+        }
 
     def informClient(self, client):
         try:

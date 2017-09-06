@@ -135,7 +135,7 @@ exports.index = class Player
 				color = '#45e9af'
 			else
 				if @data.spotted
-					color = '2a3140'
+					color = '#2a3140'
 				else
 					color = '#ccc'
 		else
@@ -164,6 +164,18 @@ exports.index = class Player
 		#@ctx.scale(10, 10)
 		@ctx.fill(shape)
 		@ctx.restore()
+
+	drawCamera: (camera) ->
+		if @data
+			x = @game.getDrawX(@data.position[0])
+			y = @game.getDrawY(@data.position[2])
+
+			[dx,dy,dz] = camera.dir
+			@ctx.strokeStyle = 'rgba(255,255,255,0.5)'
+			@ctx.beginPath()
+			@ctx.moveTo(x,y)
+			@ctx.lineTo(x+dx*1000, y-dz*1000)
+			@ctx.stroke()
 
 	died: ->
 		@div.addClass('dead')

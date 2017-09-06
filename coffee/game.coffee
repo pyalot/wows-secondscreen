@@ -36,6 +36,7 @@ exports.index = class Game
 		@playersByShipID = {}
 		@players = []
 		if data.inMatch
+			@canvas.style.backgroundImage = "url(pkg/#{data.map.name}/minimap.png)";
 			@inMatch = true
 			@mapWidth = data.map.border.high[0] - data.map.border.low[0]
 			@mapHeight = data.map.border.high[2] - data.map.border.low[2]
@@ -55,6 +56,7 @@ exports.index = class Game
 				@playersByID[player.id] = player
 				@playersByShipID[playerData.ship.id] = player
 		else
+			@canvas.style.backgroundImage = 'none';
 			@inMatch = false
 			@self = null
 			@alliesDead.empty()
@@ -68,7 +70,8 @@ exports.index = class Game
 			when 'info'
 				@info(data.data)
 			when 'update'
-				@updatePlayers(data.data)
+				@camera = data.data.camera
+				@updatePlayers(data.data.players)
 			when 'entity'
 				@entities.message(data)
 
@@ -108,6 +111,10 @@ exports.index = class Game
 		@ctx.closePath()
 		@ctx.stroke()
 
+	drawCamera: ->
+		if @self and @camera
+			@self.drawCamera(@camera)
+
 	raf: =>
 		width = @canvas.clientWidth
 		height = @canvas.clientHeight
@@ -128,6 +135,7 @@ exports.index = class Game
 		if @inMatch
 			@drawBorder()
 			@entities.draw()
+			@drawCamera()
 			@drawPlayers()
 
 		requestAnimationFrame(@raf)

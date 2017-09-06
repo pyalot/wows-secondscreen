@@ -179,6 +179,7 @@ exports.index = Game = (function() {
     this.playersByShipID = {};
     this.players = [];
     if (data.inMatch) {
+      this.canvas.style.backgroundImage = "url(pkg/" + data.map.name + "/minimap.png)";
       this.inMatch = true;
       this.mapWidth = data.map.border.high[0] - data.map.border.low[0];
       this.mapHeight = data.map.border.high[2] - data.map.border.low[2];
@@ -200,6 +201,7 @@ exports.index = Game = (function() {
         this.playersByShipID[playerData.ship.id] = player;
       }
     } else {
+      this.canvas.style.backgroundImage = 'none';
       this.inMatch = false;
       this.self = null;
       this.alliesDead.empty();
@@ -214,7 +216,8 @@ exports.index = Game = (function() {
       case 'info':
         return this.info(data.data);
       case 'update':
-        return this.updatePlayers(data.data);
+        this.camera = data.data.camera;
+        return this.updatePlayers(data.data.players);
       case 'entity':
         return this.entities.message(data);
     }
@@ -267,6 +270,12 @@ exports.index = Game = (function() {
     return this.ctx.stroke();
   };
 
+  Game.prototype.drawCamera = function() {
+    if (this.self && this.camera) {
+      return this.self.drawCamera(this.camera);
+    }
+  };
+
   Game.prototype.raf = function() {
     var height, width;
     width = this.canvas.clientWidth;
@@ -284,6 +293,7 @@ exports.index = Game = (function() {
     if (this.inMatch) {
       this.drawBorder();
       this.entities.draw();
+      this.drawCamera();
       this.drawPlayers();
     }
     return requestAnimationFrame(this.raf);
@@ -437,7 +447,7 @@ exports.index = Player = (function() {
         color = '#45e9af';
       } else {
         if (this.data.spotted) {
-          color = '2a3140';
+          color = '#2a3140';
         } else {
           color = '#ccc';
         }
@@ -465,6 +475,20 @@ exports.index = Player = (function() {
     this.ctx.rotate(this.data.dir - Math.PI / 2);
     this.ctx.fill(shape);
     return this.ctx.restore();
+  };
+
+  Player.prototype.drawCamera = function(camera) {
+    var dx, dy, dz, ref, x, y;
+    if (this.data) {
+      x = this.game.getDrawX(this.data.position[0]);
+      y = this.game.getDrawY(this.data.position[2]);
+      ref = camera.dir, dx = ref[0], dy = ref[1], dz = ref[2];
+      this.ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, y);
+      this.ctx.lineTo(x + dx * 1000, y - dz * 1000);
+      return this.ctx.stroke();
+    }
   };
 
   Player.prototype.died = function() {
