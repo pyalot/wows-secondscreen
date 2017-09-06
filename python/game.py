@@ -96,9 +96,7 @@ class Game:
     def startMatch(self):
         self.inMatch = True
 
-        for player in getPlayers().values():
-            if player.isOwn:
-                ownTeam = player.teamId
+        ownTeam = BWPersonality.PlayersInfo.getSelfPlayerInfo().teamId
 
         self.players = [Player(id, player, ownTeam == player.teamId) for id, player in getPlayers().items()]
         self.send(type='info', data=self.info())
