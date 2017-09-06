@@ -440,34 +440,20 @@ exports.index = Player = (function() {
     return this.ctx.restore();
   };
 
-  Player.prototype.drawShip = function(x, y, s, c) {
-    var color, shape;
+  Player.prototype.drawShipShape = function(x, y, s, c) {
+    var shape;
     if (this.data.alive) {
       if (this.info.team === 'ally') {
-        color = '#45e9af';
+        this.ctx.fillStyle = '#45e9af';
       } else {
         if (this.data.spotted) {
-          color = '#2a3140';
+          this.ctx.fillStyle = '#ff3615';
         } else {
-          color = '#ccc';
+          this.ctx.fillStyle = '#ccc';
         }
       }
     } else {
-      color = 'rgba(0,0,0,0.5)';
-    }
-    this.ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    this.ctx.fillStyle = color;
-    if (this.data.alive) {
-      this.ctx.save();
-      this.ctx.globalAlpha = 0.5;
-      this.ctx.textAlign = 'center';
-      this.ctx.font = '500 9px "Nobile"';
-      this.ctx.fillText(this.info.ship.short, Math.round(x), Math.round(y + 18));
-      this.ctx.restore();
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, y);
-      this.ctx.lineTo(x + s * 30, y - c * 30);
-      this.ctx.stroke();
+      this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
     }
     shape = shapes[this.info.ship.type];
     this.ctx.save();
@@ -475,6 +461,32 @@ exports.index = Player = (function() {
     this.ctx.rotate(this.data.dir - Math.PI / 2);
     this.ctx.fill(shape);
     return this.ctx.restore();
+  };
+
+  Player.prototype.drawShipExtra = function(x, y, s, c) {
+    if (this.data.alive) {
+      if (this.info.team === 'ally') {
+        this.ctx.fillStyle = '#45e9af';
+      } else {
+        this.ctx.fillStyle = '#ff3615';
+      }
+      this.ctx.save();
+      this.ctx.globalAlpha = 0.8;
+      this.ctx.textAlign = 'center';
+      this.ctx.font = '500 9px "Nobile"';
+      this.ctx.fillText(this.info.ship.short, Math.round(x), Math.round(y + 18));
+      this.ctx.restore();
+      this.ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, y);
+      this.ctx.lineTo(x + s * 30, y - c * 30);
+      return this.ctx.stroke();
+    }
+  };
+
+  Player.prototype.drawShip = function(x, y, s, c) {
+    this.drawShipShape(x, y, s, c);
+    return this.drawShipExtra(x, y, s, c);
   };
 
   Player.prototype.drawCamera = function(camera) {

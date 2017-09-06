@@ -129,34 +129,18 @@ exports.index = class Player
 		@ctx.fill(shape)
 		@ctx.restore()
 
-	drawShip: (x, y, s, c) ->
+	drawShipShape: (x, y, s, c) ->
 		if @data.alive
 			if @info.team == 'ally'
-				color = '#45e9af'
+				@ctx.fillStyle = '#45e9af'
 			else
 				if @data.spotted
-					color = '#2a3140'
+					@ctx.fillStyle = '#ff3615'
 				else
-					color = '#ccc'
+					@ctx.fillStyle = '#ccc'
 		else
-			color = 'rgba(0,0,0,0.5)'
+			@ctx.fillStyle = 'rgba(0,0,0,0.5)'
 
-		@ctx.strokeStyle = 'rgba(255,255,255,0.2)'
-		@ctx.fillStyle = color
-
-		if @data.alive
-			@ctx.save()
-			@ctx.globalAlpha = 0.5
-			@ctx.textAlign = 'center'
-			@ctx.font = '500 9px "Nobile"'
-			@ctx.fillText(@info.ship.short, Math.round(x), Math.round(y+18))
-			@ctx.restore()
-
-			@ctx.beginPath()
-			@ctx.moveTo(x, y)
-			@ctx.lineTo(x+s*30, y-c*30)
-			@ctx.stroke()
-		
 		shape = shapes[@info.ship.type]
 		@ctx.save()
 		@ctx.translate(x, y)
@@ -164,6 +148,30 @@ exports.index = class Player
 		#@ctx.scale(10, 10)
 		@ctx.fill(shape)
 		@ctx.restore()
+
+	drawShipExtra: (x, y, s, c) ->
+		if @data.alive
+			if @info.team == 'ally'
+				@ctx.fillStyle = '#45e9af'
+			else
+				@ctx.fillStyle = '#ff3615'
+				
+			@ctx.save()
+			@ctx.globalAlpha = 0.8
+			@ctx.textAlign = 'center'
+			@ctx.font = '500 9px "Nobile"'
+			@ctx.fillText(@info.ship.short, Math.round(x), Math.round(y+18))
+			@ctx.restore()
+
+			@ctx.strokeStyle = 'rgba(255,255,255,0.2)'
+			@ctx.beginPath()
+			@ctx.moveTo(x, y)
+			@ctx.lineTo(x+s*30, y-c*30)
+			@ctx.stroke()
+
+	drawShip: (x, y, s, c) ->
+		@drawShipShape(x, y, s, c)
+		@drawShipExtra(x, y, s, c)
 
 	drawCamera: (camera) ->
 		if @data
