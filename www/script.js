@@ -185,6 +185,7 @@ exports.index = Game = (function() {
       this.mapHeight = data.map.border.high[2] - data.map.border.low[2];
       this.mapX = data.map.border.low[0];
       this.mapY = data.map.border.low[2];
+      console.log(this.mapHeight);
       ref = data.players;
       for (i = 0, len = ref.length; i < len; i++) {
         playerData = ref[i];
@@ -309,6 +310,10 @@ exports.index = Game = (function() {
     y = 1.0 - (y - this.mapY) / this.mapHeight;
     y = this.drawAreaY + y * this.drawAreaSize;
     return y;
+  };
+
+  Game.prototype.toMapDim = function(value) {
+    return value * (this.drawAreaSize / this.mapHeight);
   };
 
   return Game;
@@ -532,7 +537,7 @@ exports.index = Player = (function() {
 })();
 });
 moduleManager.module('/entities', function(exports,sys){
-var Entities, SmokeScreen, entityTypes;
+var Entities, Shot, SmokeScreen, entityTypes;
 
 entityTypes = {
   smoke: SmokeScreen = (function() {
@@ -540,13 +545,13 @@ entityTypes = {
       var b, f, g, r, ref;
       this.game = game;
       this.ctx = this.game.ctx;
-      this.radius = data.radius;
+      this.radius = data.data.radius;
       ref = [5, 32, 53], r = ref[0], g = ref[1], b = ref[2];
       f = 0.2;
       r = Math.round(r * (1 - f) + 255 * f).toFixed(0);
       g = Math.round(g * (1 - f) + 255 * f).toFixed(0);
       b = Math.round(b * (1 - f) + 255 * f).toFixed(0);
-      this.color = "rgb(" + r + ", " + g + ", " + b + ")";
+      this.color = 'rgba(255,255,255,0.1)';
     }
 
     SmokeScreen.prototype.draw = function() {
@@ -567,12 +572,71 @@ entityTypes = {
       }
     };
 
-    SmokeScreen.prototype.update = function(arg) {
-      this.points = arg.points;
-      return null;
+    SmokeScreen.prototype.update = function(data) {
+      return this.points = data.data;
     };
 
     return SmokeScreen;
+
+  })(),
+  shot: Shot = (function() {
+    function Shot(game, data) {
+      this.game = game;
+      this.ctx = this.game.ctx;
+      this.data = data.data;
+      this.startTime = performance.now() / 1000;
+    }
+
+    Shot.prototype.draw = function() {
+      var dist, f, l, now, x, x0, x1, xd, y, y0, y1, yd;
+      x0 = this.game.getDrawX(this.data.origin[0]);
+      y0 = this.game.getDrawY(this.data.origin[2]);
+      x1 = this.game.getDrawX(this.data.target[0]);
+      y1 = this.game.getDrawY(this.data.target[2]);
+      xd = this.data.dir[0];
+      yd = -this.data.dir[2];
+      l = Math.sqrt(xd * xd + yd * yd);
+      xd /= l;
+      yd /= l;
+      dist = this.game.toMapDim(this.data.distance);
+
+      /*
+      			@ctx.save()
+      			@ctx.strokeStyle = 'red'
+      			#@ctx.strokeStyle = 'rgba(255,255,255,0.1)'
+      			@ctx.beginPath()
+      			@ctx.moveTo(x0, y0+2)
+      			@ctx.lineTo(x1, y1+2)
+      			@ctx.stroke()
+      			@ctx.restore()
+       */
+      this.ctx.save();
+      this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      this.ctx.beginPath();
+      this.ctx.moveTo(x0, y0);
+      this.ctx.lineTo(x0 + xd * dist, y0 + yd * dist);
+      this.ctx.stroke();
+      this.ctx.restore();
+      now = performance.now() / 1000;
+      f = (now - this.startTime) / (this.data.time + 0.4);
+      x = x0 * (1 - f) + x1 * f;
+      y = y0 * (1 - f) + y1 * f;
+      if (this.data.type === 'AP') {
+        this.ctx.fillStyle = '#57aeff';
+      } else {
+        this.ctx.fillStyle = 'red';
+      }
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, 1, 0, Math.PI * 2);
+      this.ctx.fill();
+      return this.ctx.fill();
+    };
+
+    Shot.prototype.update = function() {
+      return null;
+    };
+
+    return Shot;
 
   })()
 };
@@ -580,6 +644,7 @@ entityTypes = {
 exports.index = Entities = (function() {
   function Entities(game) {
     this.game = game;
+    console.log('here');
     this.entities = {};
   }
 

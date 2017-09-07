@@ -42,6 +42,7 @@ exports.index = class Game
 			@mapHeight = data.map.border.high[2] - data.map.border.low[2]
 			@mapX = data.map.border.low[0]
 			@mapY = data.map.border.low[2]
+			console.log @mapHeight
 
 			for playerData in data.players
 				if playerData.team == 'ally'
@@ -149,3 +150,6 @@ exports.index = class Game
 		y = 1.0 - (y-@mapY)/@mapHeight
 		y = @drawAreaY + y*@drawAreaSize
 		return y
+
+	toMapDim: (value) ->
+		return value * (@drawAreaSize/@mapHeight)

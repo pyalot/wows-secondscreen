@@ -116,6 +116,7 @@ class Game:
 
         self.players = [Player(id, player, ownTeam == player.teamId) for id, player in getPlayers().items()]
         self.send(type='info', data=self.info())
+        self.entities.startMatch()
 
     def endMatch(self):
         self.inMatch = False
