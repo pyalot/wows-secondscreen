@@ -80,9 +80,57 @@ entityTypes =
 		update: ->
 			null
 
+	torpedo: class Torpedo
+		shape: new Path2D('M -3 -1 L -3.3535156 -0.85351562 L -3.5 -0.5 L -3.5 0 L -3.5 0.5 L -3.3535156 0.85351562 L -3 1 L -1 1 L 1 1 L 1.3535156 0.85351562 L 1.5 0.5 L 1.5 0 L 1.5 -0.5 L 1.3535156 -0.85351562 L 1 -1 L -1 -1 L -3 -1 z M 2.5 -1 L 2.1464844 -0.85351562 L 2 -0.5 L 2 0 L 2 0.5 L 2.1464844 0.85351562 L 2.5 1 L 2.75 1 L 3 1 L 3.3535156 0.85351562 L 3.5 0.5 L 3.5 0 L 3.5 -0.5 L 3.3535156 -0.85351562 L 3 -1 L 2.75 -1 L 2.5 -1 z ')
+
+		constructor: (@game, data) ->
+			@ctx = @game.ctx
+			@data = data.data
+			@startPosition = @position = @data.position
+			@direction = @data.direction
+			@speed = @data.speed
+			@startTime = performance.now()/1000
+
+			xd = @direction[0]
+			yd = @direction[2]
+			l = Math.sqrt(xd*xd + yd*yd)
+			@xd = xd/l; @yd = yd/l
+			@dir = Math.atan2(@xd, @yd)
+
+			@grad= @ctx.createLinearGradient(0, 0, -200, 0);
+			@grad.addColorStop(0, "rgba(255,0,0,0.8)");
+			@grad.addColorStop(1, "rgba(255,0,0,0");
+
+		draw: ->
+			delta = performance.now()/1000 - @startTime
+
+			x0 = @startPosition[0]
+			y0 = @startPosition[2]
+
+			#x1 = @game.getDrawX(@position[0])
+			#y1 = @game.getDrawY(@position[2])
+
+			x2 = @game.getDrawX(x0 + @xd*@speed*delta)
+			y2 = @game.getDrawY(y0 + @yd*@speed*delta)
+
+			@ctx.save()
+			@ctx.translate(x2, y2)
+			@ctx.rotate(@dir + Math.PI/2)
+			@ctx.fillStyle = 'red'
+			@ctx.fill(@shape)
+			@ctx.strokeStyle = @grad
+			@ctx.beginPath()
+			@ctx.moveTo(0,0)
+			@ctx.lineTo(-200, 0)
+			@ctx.stroke()
+
+			@ctx.restore()
+
+		update: (data) ->
+			@position = data.data
+
 exports.index = class Entities
 	constructor: (@game) ->
-		console.log 'here'
 		@entities = {}
 
 	message: (data) ->

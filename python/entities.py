@@ -60,7 +60,6 @@ class Shot(Entity):
 
         timeCoefficient = 10.0/27.6369247437
 
-        mapi.log(shot._serverTimeLeft, shot.weaponType)
         self.shot = shot
         self.id = shot.shotID
         self.origin = tuple(shot._position)
@@ -88,6 +87,37 @@ class Shot(Entity):
 
     def state(self):
         pass
+
+class Torpedo(Entity):
+    name = 'torpedo'
+    
+    def __init__(self, torpedo, server, entities):
+        Entity.__init__(self, server)
+        self.entities = entities
+
+        self.torpedo = torpedo
+        self.speed = torpedo._speed
+        self.direction = tuple(torpedo._direction)
+        self.id = torpedo.shotID
+
+        self.create()
+
+    def initialData(self):
+        return {
+            'position': tuple(self.torpedo._position),
+            'speed': self.speed,
+            'direction': self.direction,
+            'position': tuple(self.torpedo._position),
+        }
+
+    def updateState(self):
+        if not self.torpedo._live:
+            self.entities.remove(self)
+        #else:
+        #    return True
+
+    def state(self):
+        return tuple(self.torpedo._position) #only for debug purposes
 
 tracked = {
     'SmokeScreen': SmokeScreen
@@ -123,5 +153,13 @@ class Entities:
         instance = Shot(shot, self.server, self)
         self.entities[instance.id] = instance
 
+    def createTorpedo(self, torp):
+        try:
+            instance = Torpedo(torp, self.server, self)
+            self.entities[instance.id] = instance
+        except:
+            mapi.log_exc()
+
     def startMatch(self):
         __import__(BigWorld.player().shotsManager.__module__).gNewShotCreated.add(self.createShot)
+        __import__(BigWorld.player().shotsManager.__module__).gNewTorpedoCreated.add(self.createTorpedo)

@@ -537,20 +537,14 @@ exports.index = Player = (function() {
 })();
 });
 moduleManager.module('/entities', function(exports,sys){
-var Entities, Shot, SmokeScreen, entityTypes;
+var Entities, Shot, SmokeScreen, Torpedo, entityTypes;
 
 entityTypes = {
   smoke: SmokeScreen = (function() {
     function SmokeScreen(game, data) {
-      var b, f, g, r, ref;
       this.game = game;
       this.ctx = this.game.ctx;
       this.radius = data.data.radius;
-      ref = [5, 32, 53], r = ref[0], g = ref[1], b = ref[2];
-      f = 0.2;
-      r = Math.round(r * (1 - f) + 255 * f).toFixed(0);
-      g = Math.round(g * (1 - f) + 255 * f).toFixed(0);
-      b = Math.round(b * (1 - f) + 255 * f).toFixed(0);
       this.color = 'rgba(255,255,255,0.1)';
     }
 
@@ -638,13 +632,62 @@ entityTypes = {
 
     return Shot;
 
+  })(),
+  torpedo: Torpedo = (function() {
+    Torpedo.prototype.shape = new Path2D('M -3 -1 L -3.3535156 -0.85351562 L -3.5 -0.5 L -3.5 0 L -3.5 0.5 L -3.3535156 0.85351562 L -3 1 L -1 1 L 1 1 L 1.3535156 0.85351562 L 1.5 0.5 L 1.5 0 L 1.5 -0.5 L 1.3535156 -0.85351562 L 1 -1 L -1 -1 L -3 -1 z M 2.5 -1 L 2.1464844 -0.85351562 L 2 -0.5 L 2 0 L 2 0.5 L 2.1464844 0.85351562 L 2.5 1 L 2.75 1 L 3 1 L 3.3535156 0.85351562 L 3.5 0.5 L 3.5 0 L 3.5 -0.5 L 3.3535156 -0.85351562 L 3 -1 L 2.75 -1 L 2.5 -1 z ');
+
+    function Torpedo(game, data) {
+      var l, xd, yd;
+      this.game = game;
+      this.ctx = this.game.ctx;
+      this.data = data.data;
+      this.startPosition = this.position = this.data.position;
+      this.direction = this.data.direction;
+      this.speed = this.data.speed;
+      this.startTime = performance.now() / 1000;
+      xd = this.direction[0];
+      yd = this.direction[2];
+      l = Math.sqrt(xd * xd + yd * yd);
+      this.xd = xd / l;
+      this.yd = yd / l;
+      this.dir = Math.atan2(this.xd, this.yd);
+      this.grad = this.ctx.createLinearGradient(0, 0, -200, 0);
+      this.grad.addColorStop(0, "rgba(255,0,0,0.8)");
+      this.grad.addColorStop(1, "rgba(255,0,0,0");
+    }
+
+    Torpedo.prototype.draw = function() {
+      var delta, x0, x2, y0, y2;
+      delta = performance.now() / 1000 - this.startTime;
+      x0 = this.startPosition[0];
+      y0 = this.startPosition[2];
+      x2 = this.game.getDrawX(x0 + this.xd * this.speed * delta);
+      y2 = this.game.getDrawY(y0 + this.yd * this.speed * delta);
+      this.ctx.save();
+      this.ctx.translate(x2, y2);
+      this.ctx.rotate(this.dir + Math.PI / 2);
+      this.ctx.fillStyle = 'red';
+      this.ctx.fill(this.shape);
+      this.ctx.strokeStyle = this.grad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, 0);
+      this.ctx.lineTo(-200, 0);
+      this.ctx.stroke();
+      return this.ctx.restore();
+    };
+
+    Torpedo.prototype.update = function(data) {
+      return this.position = data.data;
+    };
+
+    return Torpedo;
+
   })()
 };
 
 exports.index = Entities = (function() {
   function Entities(game) {
     this.game = game;
-    console.log('here');
     this.entities = {};
   }
 
