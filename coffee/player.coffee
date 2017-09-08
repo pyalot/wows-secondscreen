@@ -123,6 +123,8 @@ exports.index = class Player
 		@ctx.fillStyle = color
 		shape = shapes.self
 		@ctx.save()
+		@ctx.shadowColor = 'rgba(0, 0, 0, 1)'
+		@ctx.shadowBlur = 10
 		@ctx.translate(x, y)
 		@ctx.rotate(@data.dir - Math.PI/2)
 		@ctx.scale(1.2, 1.2)
@@ -143,6 +145,8 @@ exports.index = class Player
 
 		shape = shapes[@info.ship.type]
 		@ctx.save()
+		@ctx.shadowColor = 'rgba(0, 0, 0, 1)'
+		@ctx.shadowBlur = 10
 		@ctx.translate(x, y)
 		@ctx.rotate(@data.dir - Math.PI/2)
 		@ctx.scale(0.8, 0.8)
@@ -174,16 +178,44 @@ exports.index = class Player
 		@drawShipExtra(x, y, s, c)
 
 	drawCamera: (camera) ->
-		if @data
+		if @data and @game.ranges
 			x = @game.getDrawX(@data.position[0])
 			y = @game.getDrawY(@data.position[2])
+			dist = @game.toMapDim(@game.ranges.vision)
 
 			[dx,dy,dz] = camera.dir
 			@ctx.strokeStyle = 'rgba(255,255,255,0.5)'
 			@ctx.beginPath()
 			@ctx.moveTo(x,y)
-			@ctx.lineTo(x+dx*1000, y-dz*1000)
+			@ctx.lineTo(x+dx*dist, y-dz*dist)
 			@ctx.stroke()
+
+	drawRanges: ->
+		if @data and @game.ranges
+			x = @game.getDrawX(@data.position[0])
+			y = @game.getDrawY(@data.position[2])
+			ranges = @game.ranges
+
+			@drawCircle(x, y, ranges.seaVisible, 'rgba(50,128,20,0.1)', false)
+			@drawCircle(x, y, ranges.seaVisible, 'rgba(50,128,20,0.5)', true)
+			@drawCircle(x, y, ranges.airVisible, 'rgba(50,128,20,0.5)', true, [5, 5])
+			@drawCircle(x, y, ranges.gun, 'rgba(255,255,255,0.9)')
+			@drawCircle(x, y, ranges.torpedo, 'rgba(255,255,255,0.5)')
+
+	drawCircle: (x, y, radius, color, stroke=true, dash=null) ->
+		radius = @game.toMapDim(radius)
+		@ctx.save()
+		if dash
+			@ctx.setLineDash(dash)
+		@ctx.beginPath()
+		@ctx.arc(x, y, radius, 0, Math.PI*2)
+		if stroke
+			@ctx.strokeStyle = color
+			@ctx.stroke()
+		else
+			@ctx.fillStyle = color
+			@ctx.fill()
+		@ctx.restore()
 
 	died: ->
 		@div.addClass('dead')

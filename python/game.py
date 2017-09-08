@@ -164,8 +164,33 @@ class Game:
         }
 
     def matchState(self):
+        '''
+            >>> p.getCurrentVisibilityDistances()
+            (244.4397548224926, 121.99988086102009)
+            p.getCurrentVisionDist() -> 624.999375
+
+            p.getCurrentMaxMainShootRange()
+            p.getTorpedoesShootRange()
+            p.getCurrentAirDefenceDistance()
+        '''
         camera = BigWorld.camera()
+        player = BigWorld.player()
+
+        if player:
+            seaVisible, airVisible = player.getCurrentVisibilityDistances()
+            ranges = {
+                'seaVisible': seaVisible,
+                'airVisible': airVisible,
+                'vision': player.getCurrentVisionDist(),
+                'gun': player.getCurrentMaxMainShootRange(),
+                'torpedo': player.getTorpedoesShootRange(),
+                'airdefense': player.getCurrentAirDefenceDistance(),
+            }
+        else:
+            ranges = None
+
         return {
+            'ranges': ranges,
             'camera' : {
                 'dir': tuple(camera.direction),
                 'fov': camera.fov,

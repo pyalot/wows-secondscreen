@@ -185,7 +185,6 @@ exports.index = Game = (function() {
       this.mapHeight = data.map.border.high[2] - data.map.border.low[2];
       this.mapX = data.map.border.low[0];
       this.mapY = data.map.border.low[2];
-      console.log(this.mapHeight);
       ref = data.players;
       for (i = 0, len = ref.length; i < len; i++) {
         playerData = ref[i];
@@ -218,6 +217,7 @@ exports.index = Game = (function() {
         return this.info(data.data);
       case 'update':
         this.camera = data.data.camera;
+        this.ranges = data.data.ranges;
         return this.updatePlayers(data.data.players);
       case 'entity':
         return this.entities.message(data);
@@ -277,6 +277,12 @@ exports.index = Game = (function() {
     }
   };
 
+  Game.prototype.drawRanges = function() {
+    if (this.self) {
+      return this.self.drawRanges();
+    }
+  };
+
   Game.prototype.raf = function() {
     var height, width;
     width = this.canvas.clientWidth;
@@ -293,9 +299,13 @@ exports.index = Game = (function() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     if (this.inMatch) {
       this.drawBorder();
-      this.entities.draw();
+      this.drawRanges();
+      this.entities.draw('torpedo');
+      this.entities.draw('smoke');
       this.drawCamera();
       this.drawPlayers();
+      this.entities.draw('plane');
+      this.entities.draw('shot');
     }
     return requestAnimationFrame(this.raf);
   };
@@ -439,6 +449,8 @@ exports.index = Player = (function() {
     this.ctx.fillStyle = color;
     shape = shapes.self;
     this.ctx.save();
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 1)';
+    this.ctx.shadowBlur = 10;
     this.ctx.translate(x, y);
     this.ctx.rotate(this.data.dir - Math.PI / 2);
     this.ctx.scale(1.2, 1.2);
@@ -463,6 +475,8 @@ exports.index = Player = (function() {
     }
     shape = shapes[this.info.ship.type];
     this.ctx.save();
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 1)';
+    this.ctx.shadowBlur = 10;
     this.ctx.translate(x, y);
     this.ctx.rotate(this.data.dir - Math.PI / 2);
     this.ctx.scale(0.8, 0.8);
@@ -497,17 +511,56 @@ exports.index = Player = (function() {
   };
 
   Player.prototype.drawCamera = function(camera) {
-    var dx, dy, dz, ref, x, y;
-    if (this.data) {
+    var dist, dx, dy, dz, ref, x, y;
+    if (this.data && this.game.ranges) {
       x = this.game.getDrawX(this.data.position[0]);
       y = this.game.getDrawY(this.data.position[2]);
+      dist = this.game.toMapDim(this.game.ranges.vision);
       ref = camera.dir, dx = ref[0], dy = ref[1], dz = ref[2];
       this.ctx.strokeStyle = 'rgba(255,255,255,0.5)';
       this.ctx.beginPath();
       this.ctx.moveTo(x, y);
-      this.ctx.lineTo(x + dx * 1000, y - dz * 1000);
+      this.ctx.lineTo(x + dx * dist, y - dz * dist);
       return this.ctx.stroke();
     }
+  };
+
+  Player.prototype.drawRanges = function() {
+    var ranges, x, y;
+    if (this.data && this.game.ranges) {
+      x = this.game.getDrawX(this.data.position[0]);
+      y = this.game.getDrawY(this.data.position[2]);
+      ranges = this.game.ranges;
+      this.drawCircle(x, y, ranges.seaVisible, 'rgba(50,128,20,0.1)', false);
+      this.drawCircle(x, y, ranges.seaVisible, 'rgba(50,128,20,0.5)', true);
+      this.drawCircle(x, y, ranges.airVisible, 'rgba(50,128,20,0.5)', true, [5, 5]);
+      this.drawCircle(x, y, ranges.gun, 'rgba(255,255,255,0.9)');
+      return this.drawCircle(x, y, ranges.torpedo, 'rgba(255,255,255,0.5)');
+    }
+  };
+
+  Player.prototype.drawCircle = function(x, y, radius, color, stroke, dash) {
+    if (stroke == null) {
+      stroke = true;
+    }
+    if (dash == null) {
+      dash = null;
+    }
+    radius = this.game.toMapDim(radius);
+    this.ctx.save();
+    if (dash) {
+      this.ctx.setLineDash(dash);
+    }
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+    if (stroke) {
+      this.ctx.strokeStyle = color;
+      this.ctx.stroke();
+    } else {
+      this.ctx.fillStyle = color;
+      this.ctx.fill();
+    }
+    return this.ctx.restore();
   };
 
   Player.prototype.died = function() {
@@ -539,10 +592,20 @@ exports.index = Player = (function() {
 })();
 });
 moduleManager.module('/entities', function(exports,sys){
-var Entities, Plane, Shot, SmokeScreen, Torpedo, entityTypes;
+var Entities, Plane, Shot, SmokeScreen, Torpedo, entityTypes, shapes;
+
+shapes = {
+  torpedo: new Path2D('M -3 -0.75 L -3 0.75 L -2 0.75 L -2 -0.75 L -3 -0.75 z M -1.25 -0.75 L -1.25 0.75 L 3.25 0.75 L 3.25 -0.75 L -1.25 -0.75 z'),
+  bomb: new Path2D('m 0.75000003,-2.0000008 h -1.5 v 1 h 1.5 z m 0,1.74999999 h -1.5 l 6e-8,2.00000011 h 1.5 z'),
+  plane: new Path2D('m -3.7500001,-0.25000057 0.25,-1.25000003 h 0.5 L -2.75,-0.50000057 -0.75000013,-0.74998057 6.9999999e-8,-3.4999806 H 0.7499997 l 0.25,2.75000003 0.75,0.25 v 0.9999998 l -0.75,0.25 -0.25,2.74998017 H 9.7e-7 L -0.75000003,0.74999923 -2.75,0.49999923 -3.0000001,1.4999993 h -0.5 l -0.25,-1.25000007 z'),
+  eye: new Path2D('M 0,-1.5 -1.9192628,-0.75 -3,0 -1.9192628,0.75 0,1.5 1.9192628,0.75 3,0 1.9192628,-0.75 Z M 0,-1 0.70710678,-0.70710678 1,0 0.70710678,0.70710678 0,1 -0.70710678,0.70710678 -1,0 -0.70710678,-0.70710678 Z M 0,-0.5 -0.35355339,-0.35355339 -0.5,0 -0.35355339,0.35355339 0,0.5 0.35355339,0.35355339 0.5,0 0.35355339,-0.35355339 Z'),
+  shots: new Path2D('M -2 -1.5 L -2 -1 L -1 -1 L -1 -1.5 L -2 -1.5 z M -0.5 -1.5 L -0.5 -1 L 0.5 -1 L 0.5 -1.5 L -0.5 -1.5 z M 1 -1.5 L 1 -1 L 2 -1 L 2 -1.5 L 1 -1.5 z M -1 -0.25 L -1 0.25 L 0 0.25 L 0 -0.25 L -1 -0.25 z M 0.5 -0.25 L 0.5 0.25 L 1.5 0.25 L 1.5 -0.25 L 0.5 -0.25 z M 2 -0.25 L 2 0.25 L 3 0.25 L 3 -0.25 L 2 -0.25 z M -2 1 L -2 1.5 L -1 1.5 L -1 1 L -2 1 z M -0.5 1 L -0.5 1.5 L 0.5 1.5 L 0.5 1 L -0.5 1 z M 1 1 L 1 1.5 L 2 1.5 L 2 1 L 1 1 z ')
+};
 
 entityTypes = {
   smoke: SmokeScreen = (function() {
+    SmokeScreen.prototype.name = 'smoke';
+
     function SmokeScreen(game, data) {
       this.game = game;
       this.ctx = this.game.ctx;
@@ -576,6 +639,8 @@ entityTypes = {
 
   })(),
   shot: Shot = (function() {
+    Shot.prototype.name = 'shot';
+
     function Shot(game, data) {
       this.game = game;
       this.ctx = this.game.ctx;
@@ -636,7 +701,7 @@ entityTypes = {
 
   })(),
   torpedo: Torpedo = (function() {
-    Torpedo.prototype.shape = new Path2D('M -3 -1 L -3.3535156 -0.85351562 L -3.5 -0.5 L -3.5 0 L -3.5 0.5 L -3.3535156 0.85351562 L -3 1 L -1 1 L 1 1 L 1.3535156 0.85351562 L 1.5 0.5 L 1.5 0 L 1.5 -0.5 L 1.3535156 -0.85351562 L 1 -1 L -1 -1 L -3 -1 z M 2.5 -1 L 2.1464844 -0.85351562 L 2 -0.5 L 2 0 L 2 0.5 L 2.1464844 0.85351562 L 2.5 1 L 2.75 1 L 3 1 L 3.3535156 0.85351562 L 3.5 0.5 L 3.5 0 L 3.5 -0.5 L 3.3535156 -0.85351562 L 3 -1 L 2.75 -1 L 2.5 -1 z ');
+    Torpedo.prototype.name = 'torpedo';
 
     function Torpedo(game, data) {
       var l, xd, yd;
@@ -653,7 +718,7 @@ entityTypes = {
       this.xd = xd / l;
       this.yd = yd / l;
       this.dir = Math.atan2(this.xd, this.yd);
-      this.grad = this.ctx.createLinearGradient(0, 0, -200, 0);
+      this.grad = this.ctx.createLinearGradient(0, 0, 200, 0);
       this.grad.addColorStop(0, "rgba(255,0,0,0.8)");
       this.grad.addColorStop(1, "rgba(255,0,0,0");
     }
@@ -667,13 +732,16 @@ entityTypes = {
       y2 = this.game.getDrawY(y0 + this.yd * this.speed * delta);
       this.ctx.save();
       this.ctx.translate(x2, y2);
-      this.ctx.rotate(this.dir + Math.PI / 2);
+      this.ctx.rotate(this.dir - Math.PI / 2);
+      this.ctx.save();
+      this.ctx.scale(1.5, 1.5);
       this.ctx.fillStyle = 'red';
-      this.ctx.fill(this.shape);
+      this.ctx.fill(shapes.torpedo);
+      this.ctx.restore();
       this.ctx.strokeStyle = this.grad;
       this.ctx.beginPath();
       this.ctx.moveTo(0, 0);
-      this.ctx.lineTo(-200, 0);
+      this.ctx.lineTo(200, 0);
       this.ctx.stroke();
       return this.ctx.restore();
     };
@@ -688,7 +756,9 @@ entityTypes = {
 
   })(),
   plane: Plane = (function() {
-    Plane.prototype.shape = new Path2D('m -3.7500001,-0.25000057 0.25,-1.25000003 h 0.5 L -2.75,-0.50000057 -0.75000013,-0.74998057 6.9999999e-8,-3.4999806 H 0.7499997 l 0.25,2.75000003 0.75,0.25 v 0.9999998 l -0.75,0.25 -0.25,2.74998017 H 9.7e-7 L -0.75000003,0.74999923 -2.75,0.49999923 -3.0000001,1.4999993 h -0.5 l -0.25,-1.25000007 z');
+    Plane.prototype.shapes = [shapes.eye, shapes.bomb, shapes.torpedo, shapes.shots];
+
+    Plane.prototype.name = 'plane';
 
     function Plane(game, arg) {
       var data;
@@ -704,15 +774,22 @@ entityTypes = {
         x = this.game.getDrawX(this.position[0]);
         y = this.game.getDrawY(this.position[2]);
         this.ctx.save();
-        this.ctx.translate(x, y);
-        this.ctx.scale(1.7, 1.7);
-        this.ctx.rotate(this.dir - Math.PI / 2);
         if (this.info.team === 'ally') {
           this.ctx.fillStyle = '#45e9af';
         } else {
           this.ctx.fillStyle = '#ff3615';
         }
-        this.ctx.fill(this.shape);
+        this.ctx.translate(x, y);
+        this.ctx.save();
+        this.ctx.shadowColor = 'rgba(0, 0, 0, 1)';
+        this.ctx.shadowBlur = 10;
+        this.ctx.translate(0, 13);
+        this.ctx.scale(2, 2);
+        this.ctx.fill(this.shapes[this.info.type]);
+        this.ctx.restore();
+        this.ctx.scale(1.7, 1.7);
+        this.ctx.rotate(this.dir - Math.PI / 2);
+        this.ctx.fill(shapes.plane);
         return this.ctx.restore();
       }
     };
@@ -753,13 +830,17 @@ exports.index = Entities = (function() {
     }
   };
 
-  Entities.prototype.draw = function() {
+  Entities.prototype.draw = function(type) {
     var entity, id, ref, results;
     ref = this.entities;
     results = [];
     for (id in ref) {
       entity = ref[id];
-      results.push(entity.draw());
+      if (entity.name === type) {
+        results.push(entity.draw());
+      } else {
+        results.push(void 0);
+      }
     }
     return results;
   };

@@ -42,7 +42,6 @@ exports.index = class Game
 			@mapHeight = data.map.border.high[2] - data.map.border.low[2]
 			@mapX = data.map.border.low[0]
 			@mapY = data.map.border.low[2]
-			console.log @mapHeight
 
 			for playerData in data.players
 				if playerData.team == 'ally'
@@ -72,6 +71,7 @@ exports.index = class Game
 				@info(data.data)
 			when 'update'
 				@camera = data.data.camera
+				@ranges = data.data.ranges
 				@updatePlayers(data.data.players)
 			when 'entity'
 				@entities.message(data)
@@ -116,6 +116,9 @@ exports.index = class Game
 		if @self and @camera
 			@self.drawCamera(@camera)
 
+	drawRanges: ->
+		if @self then @self.drawRanges()
+
 	raf: =>
 		width = @canvas.clientWidth
 		height = @canvas.clientHeight
@@ -135,9 +138,13 @@ exports.index = class Game
 
 		if @inMatch
 			@drawBorder()
-			@entities.draw()
+			@drawRanges()
+			@entities.draw('torpedo')
+			@entities.draw('smoke')
 			@drawCamera()
 			@drawPlayers()
+			@entities.draw('plane')
+			@entities.draw('shot')
 
 		requestAnimationFrame(@raf)
 
