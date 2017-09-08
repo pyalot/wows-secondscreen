@@ -125,7 +125,7 @@ exports.index = class Player
 		@ctx.save()
 		@ctx.translate(x, y)
 		@ctx.rotate(@data.dir - Math.PI/2)
-		#@ctx.scale(10, 10)
+		@ctx.scale(1.2, 1.2)
 		@ctx.fill(shape)
 		@ctx.restore()
 
@@ -145,7 +145,7 @@ exports.index = class Player
 		@ctx.save()
 		@ctx.translate(x, y)
 		@ctx.rotate(@data.dir - Math.PI/2)
-		#@ctx.scale(10, 10)
+		@ctx.scale(0.8, 0.8)
 		@ctx.fill(shape)
 		@ctx.restore()
 

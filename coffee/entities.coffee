@@ -126,8 +126,41 @@ entityTypes =
 
 			@ctx.restore()
 
-		update: (data) ->
-			@position = data.data
+		update: ({data}) ->
+			@position = data
+
+	plane: class Plane
+		shape: new Path2D('m -3.7500001,-0.25000057 0.25,-1.25000003 h 0.5 L -2.75,-0.50000057 -0.75000013,-0.74998057 6.9999999e-8,-3.4999806 H 0.7499997 l 0.25,2.75000003 0.75,0.25 v 0.9999998 l -0.75,0.25 -0.25,2.74998017 H 9.7e-7 L -0.75000003,0.74999923 -2.75,0.49999923 -3.0000001,1.4999993 h -0.5 l -0.25,-1.25000007 z')
+		constructor: (@game, {data}) ->
+			@ctx = @game.ctx
+			@info = data
+
+		draw: ->
+			if @position?
+				x = @game.getDrawX(@position[0])
+				y = @game.getDrawY(@position[2])
+
+				@ctx.save()
+				@ctx.translate(x, y)
+				@ctx.scale(1.7, 1.7)
+				@ctx.rotate(@dir - Math.PI/2)
+				if @info.team == 'ally'
+					@ctx.fillStyle = '#45e9af'
+				else
+					@ctx.fillStyle = '#ff3615'
+				@ctx.fill(@shape)
+				@ctx.restore()
+
+		update: ({data}) ->
+			@position = data.position
+			@direction = data.direction
+			@count = data.count
+
+			xd = @direction[0]
+			yd = @direction[2]
+			l = Math.sqrt(xd*xd + yd*yd)
+			@xd = xd/l; @yd = yd/l
+			@dir = Math.atan2(@xd, @yd)
 
 exports.index = class Entities
 	constructor: (@game) ->

@@ -119,6 +119,47 @@ class Torpedo(Entity):
     def state(self):
         return tuple(self.torpedo._position) #only for debug purposes
 
+class Plane(Entity):
+    name = 'plane'
+    
+    def __init__(self, id, plane, server, entities):
+        Entity.__init__(self, server)
+        self.entities = entities
+
+        self.id = id
+        self.plane = plane
+        self.create()
+
+    def initialData(self):
+        return {
+            'type': self.plane.planeType,
+            'count': self.plane.totalNumPlanes,
+            'team': 'ally' if self.plane.teamId == self.entities.ownTeam else 'enemy',
+        }
+
+    def updateState(self):
+        if not self.plane.isActive:
+            self.entities.remove(self)
+            return
+
+        player = BigWorld.player()
+        if player and getattr(player, 'planesManager', None):
+            if self.id not in player.planesManager.allSquadrons.keys():
+                self.entities.remove()
+                return
+        else:
+            self.entities.remove(self)
+            return
+
+        return True
+
+    def state(self):
+        return {
+            'position': tuple(self.plane.position),
+            'direction': tuple(self.plane.direction),
+            'count': self.plane.numPlanes,
+        }
+
 tracked = {
     'SmokeScreen': SmokeScreen
 }
@@ -148,6 +189,16 @@ class Entities:
                 if id not in self.entities:
                     instance = cls(id, entity, self.server, self)
                     self.entities[id] = instance
+
+        try:
+            player = BigWorld.player()
+            if player and getattr(player, 'planesManager', None):
+                for id, plane in player.planesManager.allSquadrons.items():
+                    if plane.isActive and (plane.id not in self.entities):
+                        instance = Plane(id, plane, self.server, self)
+                        self.entities[id] = instance
+        except:
+            mapi.log_exc()
 
     def createShot(self, shot):
         instance = Shot(shot, self.server, self)

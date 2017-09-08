@@ -441,6 +441,7 @@ exports.index = Player = (function() {
     this.ctx.save();
     this.ctx.translate(x, y);
     this.ctx.rotate(this.data.dir - Math.PI / 2);
+    this.ctx.scale(1.2, 1.2);
     this.ctx.fill(shape);
     return this.ctx.restore();
   };
@@ -464,6 +465,7 @@ exports.index = Player = (function() {
     this.ctx.save();
     this.ctx.translate(x, y);
     this.ctx.rotate(this.data.dir - Math.PI / 2);
+    this.ctx.scale(0.8, 0.8);
     this.ctx.fill(shape);
     return this.ctx.restore();
   };
@@ -537,7 +539,7 @@ exports.index = Player = (function() {
 })();
 });
 moduleManager.module('/entities', function(exports,sys){
-var Entities, Shot, SmokeScreen, Torpedo, entityTypes;
+var Entities, Plane, Shot, SmokeScreen, Torpedo, entityTypes;
 
 entityTypes = {
   smoke: SmokeScreen = (function() {
@@ -676,11 +678,60 @@ entityTypes = {
       return this.ctx.restore();
     };
 
-    Torpedo.prototype.update = function(data) {
-      return this.position = data.data;
+    Torpedo.prototype.update = function(arg) {
+      var data;
+      data = arg.data;
+      return this.position = data;
     };
 
     return Torpedo;
+
+  })(),
+  plane: Plane = (function() {
+    Plane.prototype.shape = new Path2D('m -3.7500001,-0.25000057 0.25,-1.25000003 h 0.5 L -2.75,-0.50000057 -0.75000013,-0.74998057 6.9999999e-8,-3.4999806 H 0.7499997 l 0.25,2.75000003 0.75,0.25 v 0.9999998 l -0.75,0.25 -0.25,2.74998017 H 9.7e-7 L -0.75000003,0.74999923 -2.75,0.49999923 -3.0000001,1.4999993 h -0.5 l -0.25,-1.25000007 z');
+
+    function Plane(game, arg) {
+      var data;
+      this.game = game;
+      data = arg.data;
+      this.ctx = this.game.ctx;
+      this.info = data;
+    }
+
+    Plane.prototype.draw = function() {
+      var x, y;
+      if (this.position != null) {
+        x = this.game.getDrawX(this.position[0]);
+        y = this.game.getDrawY(this.position[2]);
+        this.ctx.save();
+        this.ctx.translate(x, y);
+        this.ctx.scale(1.7, 1.7);
+        this.ctx.rotate(this.dir - Math.PI / 2);
+        if (this.info.team === 'ally') {
+          this.ctx.fillStyle = '#45e9af';
+        } else {
+          this.ctx.fillStyle = '#ff3615';
+        }
+        this.ctx.fill(this.shape);
+        return this.ctx.restore();
+      }
+    };
+
+    Plane.prototype.update = function(arg) {
+      var data, l, xd, yd;
+      data = arg.data;
+      this.position = data.position;
+      this.direction = data.direction;
+      this.count = data.count;
+      xd = this.direction[0];
+      yd = this.direction[2];
+      l = Math.sqrt(xd * xd + yd * yd);
+      this.xd = xd / l;
+      this.yd = yd / l;
+      return this.dir = Math.atan2(this.xd, this.yd);
+    };
+
+    return Plane;
 
   })()
 };

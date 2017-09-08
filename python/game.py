@@ -113,6 +113,7 @@ class Game:
         for player in getPlayers().values():
             if player.isOwn:
                 ownTeam = player.teamId
+        self.entities.ownTeam = ownTeam
 
         self.players = [Player(id, player, ownTeam == player.teamId) for id, player in getPlayers().items()]
         self.send(type='info', data=self.info())
@@ -124,12 +125,12 @@ class Game:
         self.send(type='info', data=self.info())
 
     def update(self):
-        self.entities.update()
         players = getPlayers()
         if len(players) > 0 and not self.inMatch:
             self.startMatch()
         elif len(players) == 0 and self.inMatch:
             self.endMatch()
+        self.entities.update()
 
         if self.inMatch:
             self.send(type='update', data=self.matchState())
